@@ -1,0 +1,181 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
+import 'package:gym/features/gym_owner/domain/models/attendance_model.dart';
+import 'package:gym/features/gym_owner/domain/models/member_model.dart';
+
+class MemberCardWidget extends ConsumerWidget {
+  final MemberModel member;
+  final List<AttendanceModel> attendances;
+  final VoidCallback? onTap;
+
+  const MemberCardWidget({
+    super.key,
+    required this.member,
+    required this.attendances,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dueAmount = (member.monthlyPlanAmount ?? 0) - (member.paidAmount ?? 0);
+    
+    final memberAttendances = attendances.where((a) => a.memberId == member.id);
+    final memberAttendance = memberAttendances.isNotEmpty ? memberAttendances.last : null;
+    
+    String attendanceLabel = 'Check In';
+    IconData attendanceIcon = Icons.login;
+    Color attendanceColor = Colors.blue;
+    bool isAttendanceDisabled = false;
+
+    if (memberAttendance != null) {
+      if (memberAttendance.checkOutTime == null) {
+        attendanceLabel = 'Check Out';
+        attendanceIcon = Icons.logout;
+        attendanceColor = Colors.orange;
+      } else {
+        attendanceLabel = 'Completed';
+        attendanceIcon = Icons.check_circle;
+        attendanceColor = Colors.grey;
+        isAttendanceDisabled = true;
+      }
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: member.profilePhotoUrl != null && member.profilePhotoUrl!.isNotEmpty
+                        ? NetworkImage(member.profilePhotoUrl!)
+                        : null,
+                    child: member.profilePhotoUrl == null || member.profilePhotoUrl!.isEmpty
+                        ? const Icon(Icons.person, size: 30)
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                member.name,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                ref.read(gymOwnerRepositoryProvider).deleteMember(member.id);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Member deleted')),
+                                );
+                              },
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              tooltip: 'Delete Member',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('ID: ${member.memberId ?? member.id}'),
+                        const SizedBox(height: 4),
+                        Text('Plan: ${member.membershipType ?? 'N/A'}'),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Expires: ${member.expiryDate?.toString().split(' ')[0] ?? 'N/A'}',
+                          style: TextStyle(
+                            color: member.isMembershipActive ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Due: \$${(dueAmount > 0 ? dueAmount : 0).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: dueAmount > 0 ? Colors.red : Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton.icon(
+                    onPressed: isAttendanceDisabled ? null : () async {
+                      try {
+                        final repo = ref.read(gymOwnerRepositoryProvider);
+                        if (memberAttendance == null) {
+                          // Check in
+                          final now = DateTime.now();
+                          final newAttendance = AttendanceModel(
+                            id: '', // Will be generated by Firestore
+                            gymId: member.gymId,
+                            memberId: member.id,
+                            date: DateTime(now.year, now.month, now.day),
+                            checkInTime: now,
+                          );
+                          await repo.checkIn(newAttendance);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Checked In successfully')),
+                            );
+                          }
+                        } else if (memberAttendance.checkOutTime == null) {
+                          // Check out
+                          await repo.checkOut(memberAttendance.id, DateTime.now());
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Checked Out successfully')),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
+                        }
+                      }
+                    },
+                    icon: Icon(attendanceIcon, color: attendanceColor),
+                    label: Text(attendanceLabel, style: TextStyle(color: attendanceColor)),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      // TODO: Implement Renew
+                    },
+                    icon: const Icon(Icons.autorenew, color: Colors.green),
+                    label: const Text('Renew Plan'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

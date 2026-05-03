@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData().role == 'superAdmin';
+    }
+    
+    function isGymOwner() {
+      return isSignedIn() && getUserData().role == 'gymOwner';
+    }
+    
+    function isTrainer() {
+      return isSignedIn() && getUserData().role == 'trainer';
+    }
+    
+    function isMember() {
+      return isSignedIn() && getUserData().role == 'member';
+    }
+    
+    function hasCorrectGymId(gymId) {
+      return getUserData().gymId == gymId;
+    }
+
+    // ----- Users Collection -----
+    match /users/{userId} {
+      // Super Admin can read/write all. Users can read/write their own data.
+      allow read: if isSuperAdmin() || request.auth.uid == userId;
+      // Allow creation during registration without full credentials yet (auth triggered)
+      allow write: if request.auth.uid == userId || isSuperAdmin() || isGymOwner();
+    }
+
+    // ----- Gyms Collection -----
+    match /gyms/{gymId} {
+      allow read: if isSuperAdmin() || hasCorrectGymId(gymId);
+      // Only gym owner can update their own gym details, or superAdmin for all
+      allow update: if isSuperAdmin() || (isGymOwner() && hasCorrectGymId(gymId));
+      // Only Super Admin can create/delete or Gym Owner during registration
+      allow create: if isSignedIn(); // Allow gym owner registration
+      allow delete: if isSuperAdmin();
+    }
+
+    // ----- Members Collection -----
+    match /members/{memberId} {
+      // Gym owner and trainers of that gym can read. The member themselves can read.
+      allow read: if isSuperAdmin() || 
+                     (isGymOwner() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isTrainer() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isMember() && request.auth.uid == memberId);
+                     
+      // Gym owner can manage members.
+      allow write: if isSuperAdmin() || (isGymOwner() && hasCorrectGymId(request.resource.data.gymId));
+    }
+    
+    // ----- Workouts Collection -----
+    match /workouts/{workoutId} {
+      // Gym owner, trainer, and specific member can read
+      allow read: if isSuperAdmin() || 
+                     (isGymOwner() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isTrainer() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isMember() && resource.data.memberId == request.auth.uid);
+                     
+      // Trainers and Gym Owners can write
+      allow write: if isSuperAdmin() || 
+                      (isGymOwner() && hasCorrectGymId(request.resource.data.gymId)) ||
+                      (isTrainer() && hasCorrectGymId(request.resource.data.gymId));
+    }
+    
+    // ----- Payments & Expenses Collection -----
+    match /{collection}/{docId} {
+      // Only Gym Owner & Admin can view financials
+      allow read, write: if (collection == 'payments' || collection == 'expenses') && 
+                            (isSuperAdmin() || (isGymOwner() && hasCorrectGymId(request.resource.data.gymId)));
+    }
+    
+    // ----- Progress Photos -----
+    match /progress/{progressId} {
+       allow read: if isSuperAdmin() || 
+                     (isGymOwner() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isTrainer() && hasCorrectGymId(resource.data.gymId)) ||
+                     (isMember() && resource.data.memberId == request.auth.uid);
+                     
+       allow create: if isMember() && request.resource.data.memberId == request.auth.uid 
+                     && hasCorrectGymId(request.resource.data.gymId);
+       
+       allow update, delete: if isMember() && resource.data.memberId == request.auth.uid;
+    }
+  }
+}
