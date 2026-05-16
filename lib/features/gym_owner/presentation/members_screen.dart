@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym/features/gym_owner/presentation/providers/gym_owner_providers.dart';
-import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
-import 'package:gym/features/gym_owner/domain/models/attendance_model.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/presentation/widgets/member_card_widget.dart';
 import 'package:gym/features/gym_owner/presentation/member_detail_screen.dart';
 import 'package:gym/features/gym_owner/presentation/widgets/gym_owner_drawer.dart';
+import 'package:gym/features/gym_owner/presentation/add_member_screen.dart';
+import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 
 class MembersScreen extends ConsumerStatefulWidget {
   const MembersScreen({super.key});
@@ -35,6 +35,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         children: [
           _buildSearchBar(),
           _buildFilterBar(),
+          _buildStatusFilter(),
           Expanded(
             child: membersAsync.when(
               data: (members) {
@@ -45,6 +46,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 Iterable<MemberModel> filteredMembers = members;
                 if (_searchQuery.isNotEmpty) {
                   filteredMembers = filteredMembers.where((m) => m.name.toLowerCase().contains(_searchQuery.toLowerCase()));
+                }
+                final statusFilter = ref.watch(membersStatusFilterProvider);
+                if (statusFilter == 'Active') {
+                  filteredMembers = filteredMembers.where((m) => m.isMembershipActive);
                 }
                 if (_fromDate != null) {
                   final from = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day);
@@ -66,17 +71,74 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                   itemCount: sortedMembers.length,
                   itemBuilder: (context, index) {
                     final member = sortedMembers[index];
-                    return MemberCardWidget(
-                      member: member,
-                      attendances: attendances,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MemberDetailScreen(member: member),
-                          ),
-                        );
+                    return Dismissible(
+                      key: Key(member.id),
+                      background: Container(
+                        color: Colors.green,
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: 20.0),
+                        child: const Icon(Icons.edit, color: Colors.white),
+                      ),
+                      secondaryBackground: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20.0),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      confirmDismiss: (direction) async {
+                        if (direction == DismissDirection.startToEnd) {
+                          // Swipe to edit
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddMemberScreen(member: member),
+                            ),
+                          );
+                          return false; // Don't actually dismiss the item
+                        } else if (direction == DismissDirection.endToStart) {
+                          // Swipe to delete
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Member'),
+                              content: const Text('Are you sure you want to delete this member?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await ref.read(gymOwnerRepositoryProvider).deleteMember(member.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Member deleted successfully')),
+                              );
+                            }
+                            return true;
+                          }
+                          return false;
+                        }
+                        return false;
                       },
+                      child: MemberCardWidget(
+                        member: member,
+                        attendances: attendances,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MemberDetailScreen(member: member),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 );
@@ -86,6 +148,18 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddMemberScreen(),
+            ),
+          );
+        },
+        icon: const Icon(Icons.person_add),
+        label: const Text('Add Member'),
       ),
     );
   }
@@ -167,6 +241,38 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 });
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusFilter() {
+    final statusFilter = ref.watch(membersStatusFilterProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          const Text('Show:', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 16),
+          ChoiceChip(
+            label: const Text('All'),
+            selected: statusFilter == 'All',
+            onSelected: (selected) {
+              if (selected) {
+                ref.read(membersStatusFilterProvider.notifier).setFilter('All');
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Active Members'),
+            selected: statusFilter == 'Active',
+            onSelected: (selected) {
+              if (selected) {
+                ref.read(membersStatusFilterProvider.notifier).setFilter('Active');
+              }
+            },
+          ),
         ],
       ),
     );

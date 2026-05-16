@@ -5,10 +5,13 @@ import 'package:gym/core/widgets/custom_text_field.dart';
 import 'package:gym/features/auth/presentation/providers/auth_provider.dart';
 import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
+import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 import 'package:intl/intl.dart';
 
 class AddMemberScreen extends ConsumerStatefulWidget {
-  const AddMemberScreen({super.key});
+  final MemberModel? member;
+
+  const AddMemberScreen({super.key, this.member});
 
   @override
   ConsumerState<AddMemberScreen> createState() => _AddMemberScreenState();
@@ -36,6 +39,27 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final List<String> _paymentMethods = ['Cash', 'EasyPaisa', 'Jazz Cash', 'Bank Transfer'];
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.member != null) {
+      final m = widget.member!;
+      _nameController.text = m.name;
+      _profilePhotoUrlController.text = m.profilePhotoUrl ?? '';
+      _phoneController.text = m.phone ?? '';
+      _monthlyPlanAmountController.text = m.monthlyPlanAmount?.toString() ?? '';
+      _paidAmountController.text = m.paidAmount?.toString() ?? '';
+      _admissionFeeController.text = m.admissionFee?.toString() ?? '';
+      _emailController.text = m.email ?? '';
+      _addressController.text = m.address ?? '';
+      _selectedGender = m.gender;
+      _selectedPaymentMethod = m.paymentMethod;
+      _joinDate = m.startDate;
+      _paymentDate = m.paymentDate;
+      _dob = m.dateOfBirth;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,14 +99,14 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       final generatedMemberId = 'MEM-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
       final member = MemberModel(
-        id: 'temp', // Replaced by Firestore document ID in repository, but gymOwnerRepository.addMember sets docRef.id if we use doc().id. Wait, `addMember` currently does `docRef.set(member.toMap())`. `MemberModel` has `id: documentId` in `fromMap`, but `toMap` doesn't include `id`. So 'temp' is fine.
+        id: widget.member?.id ?? 'temp',
         gymId: gymId,
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
         profilePhotoUrl: _profilePhotoUrlController.text.trim().isEmpty ? null : _profilePhotoUrlController.text.trim(),
         gender: _selectedGender,
-        memberId: generatedMemberId,
+        memberId: widget.member?.memberId ?? generatedMemberId,
         monthlyPlanAmount: double.tryParse(_monthlyPlanAmountController.text.trim()),
         startDate: _joinDate,
         paymentDate: _paymentDate,
@@ -91,15 +115,37 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         admissionFee: double.tryParse(_admissionFeeController.text.trim()),
         dateOfBirth: _dob,
         address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        isActive: true,
-        createdAt: DateTime.now(),
+        isActive: widget.member?.isActive ?? true,
+        createdAt: widget.member?.createdAt ?? DateTime.now(),
       );
 
-      await ref.read(gymOwnerRepositoryProvider).addMember(member);
+      String firestoreMemberId = member.id;
+      if (widget.member == null) {
+        firestoreMemberId = await ref.read(gymOwnerRepositoryProvider).addMember(member);
+      } else {
+        await ref.read(gymOwnerRepositoryProvider).updateMember(member);
+      }
+
+      final double paidAmount = double.tryParse(_paidAmountController.text.trim()) ?? 0.0;
+      final double admissionFee = double.tryParse(_admissionFeeController.text.trim()) ?? 0.0;
+      final double totalPaid = paidAmount + admissionFee;
+
+      if (widget.member == null && totalPaid > 0) {
+        final payment = PaymentModel(
+          id: 'temp',
+          gymId: gymId,
+          memberId: firestoreMemberId,
+          amount: totalPaid,
+          paymentDate: _paymentDate ?? DateTime.now(),
+          paymentMethod: _selectedPaymentMethod ?? 'Cash',
+          createdAt: DateTime.now(),
+        );
+        await ref.read(gymOwnerRepositoryProvider).addPayment(payment);
+      }
 
       if (mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member added successfully')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.member == null ? 'Member added successfully' : 'Member updated successfully')));
       }
     } catch (e) {
       if (mounted) {
@@ -113,7 +159,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Member')),
+      appBar: AppBar(title: Text(widget.member == null ? 'Add Member' : 'Edit Member')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -233,7 +279,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
               else
                 ElevatedButton(
                   onPressed: _submitForm,
-                  child: const Text('Add Member'),
+                  child: Text(widget.member == null ? 'Add Member' : 'Save Changes'),
                 ),
             ],
           ),

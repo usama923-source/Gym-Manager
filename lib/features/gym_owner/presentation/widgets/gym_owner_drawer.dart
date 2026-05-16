@@ -80,7 +80,7 @@ class GymOwnerDrawer extends ConsumerWidget {
                     title: const Text('Deleted Members'),
                     onTap: () {
                       context.pop();
-                      // TODO: Implement Deleted Members
+                      context.push('/deleted-members');
                     },
                   ),
                   ListTile(

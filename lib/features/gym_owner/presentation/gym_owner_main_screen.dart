@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gym/features/gym_owner/gym_owner_dashboard.dart';
-import 'package:gym/features/gym_owner/presentation/gym_profile_screen.dart';
 import 'package:gym/features/gym_owner/presentation/members_screen.dart';
 import 'package:gym/features/gym_owner/presentation/reports_screen.dart';
 
@@ -14,18 +13,22 @@ class GymOwnerMainScreen extends StatefulWidget {
 class _GymOwnerMainScreenState extends State<GymOwnerMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const GymOwnerDashboard(),
-    const MembersScreen(),
-    const ReportsScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: [
+          GymOwnerDashboard(
+            onNavigateToMembers: () {
+              setState(() {
+                _currentIndex = 1;
+              });
+            },
+          ),
+          const MembersScreen(),
+          const ReportsScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

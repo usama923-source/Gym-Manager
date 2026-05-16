@@ -24,6 +24,8 @@ class MemberModel {
   final double? admissionFee;
   final DateTime? dateOfBirth;
   final String? address;
+  final bool? isDeleted;
+  final DateTime? deletedAt;
 
   MemberModel({
     required this.id,
@@ -47,6 +49,8 @@ class MemberModel {
     this.admissionFee,
     this.dateOfBirth,
     this.address,
+    this.isDeleted,
+    this.deletedAt,
   });
 
   bool get isMembershipActive => expiryDate != null 
@@ -76,6 +80,8 @@ class MemberModel {
       admissionFee: (map['admissionFee'] as num?)?.toDouble(),
       dateOfBirth: map['dateOfBirth'] != null ? (map['dateOfBirth'] as Timestamp).toDate() : null,
       address: map['address'],
+      isDeleted: map['isDeleted'],
+      deletedAt: map['deletedAt'] != null ? (map['deletedAt'] as Timestamp).toDate() : null,
     );
   }
 
@@ -101,6 +107,8 @@ class MemberModel {
       if (admissionFee != null) 'admissionFee': admissionFee,
       if (dateOfBirth != null) 'dateOfBirth': Timestamp.fromDate(dateOfBirth!),
       if (address != null) 'address': address,
+      if (isDeleted != null) 'isDeleted': isDeleted,
+      if (deletedAt != null) 'deletedAt': Timestamp.fromDate(deletedAt!),
     };
   }
 }

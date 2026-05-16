@@ -256,7 +256,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
 class _AddExpenseForm extends ConsumerStatefulWidget {
   final ExpenseModel? expense;
-  const _AddExpenseForm({Key? key, this.expense}) : super(key: key);
+  const _AddExpenseForm({this.expense});
 
   @override
   ConsumerState<_AddExpenseForm> createState() => _AddExpenseFormState();

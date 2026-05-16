@@ -13,6 +13,8 @@ import 'package:gym/features/member/member_dashboard.dart';
 import 'package:gym/features/gym_owner/presentation/add_member_screen.dart';
 import 'package:gym/features/gym_owner/presentation/edit_profile_screen.dart';
 import 'package:gym/features/gym_owner/presentation/expenses_screen.dart';
+import 'package:gym/features/gym_owner/presentation/screens/deleted_members_screen.dart';
+import 'package:gym/features/gym_owner/presentation/screens/income_report_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -74,6 +76,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/expenses',
         builder: (context, state) => const ExpensesScreen(),
+      ),
+      GoRoute(
+        path: '/deleted-members',
+        builder: (context, state) => const DeletedMembersScreen(),
+      ),
+      GoRoute(
+        path: '/income-report',
+        builder: (context, state) => const IncomeReportScreen(),
       ),
     ],
   );
