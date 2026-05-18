@@ -7,15 +7,13 @@ import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 import 'package:gym/features/gym_owner/domain/models/expense_model.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/presentation/providers/gym_owner_providers.dart';
+import 'package:gym/features/gym_owner/presentation/widgets/gym_owner_drawer.dart';
 
 // ─── Color palette ───────────────────────────────────────────────────────────
 const _kIncome = Color(0xFF00C897);
 const _kExpense = Color(0xFFFF5A5F);
 const _kProfit = Color(0xFF3B82F6);
 const _kPending = Color(0xFFFFA500);
-const _kBg = Color(0xFF0F1624);
-const _kCard = Color(0xFF1A2235);
-const _kCardLight = Color(0xFF232F45);
 
 final _fmt = DateFormat('MMM d, yyyy');
 final _cur = NumberFormat.currency(symbol: 'Rs ', decimalDigits: 0);
@@ -46,18 +44,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kBg,
+      drawer: const GymOwnerDrawer(),
       appBar: AppBar(
-        backgroundColor: _kBg,
-        elevation: 0,
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.5),
         title: Text('Financial Reports',
-            style: GoogleFonts.montserrat(
-                fontWeight: FontWeight.bold, color: Colors.white)),
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tab,
-          indicatorColor: _kIncome,
-          labelColor: _kIncome,
-          unselectedLabelColor: Colors.white54,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           labelStyle: GoogleFonts.lato(fontWeight: FontWeight.bold),
           tabs: const [
             Tab(icon: Icon(Icons.bar_chart_rounded), text: 'Overview'),
@@ -163,7 +160,7 @@ class _OverviewTab extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text('Monthly Overview (12 months)',
                     style: GoogleFonts.montserrat(
-                        color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14)),
+                        fontWeight: FontWeight.bold, fontSize: 14)),
               ),
               const SizedBox(height: 8),
               const _MonthlyChart(),
@@ -176,7 +173,6 @@ class _OverviewTab extends ConsumerWidget {
                   children: [
                     Text('Payment Methods',
                         style: GoogleFonts.montserrat(
-                            color: Colors.white70,
                             fontWeight: FontWeight.bold,
                             fontSize: 14)),
                     const SizedBox(height: 12),
@@ -212,8 +208,8 @@ class _FilterBarState extends ConsumerState<_FilterBar> {
       firstDate: DateTime(2020),
       lastDate: now,
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _kIncome),
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(primary: _kIncome),
         ),
         child: child!,
       ),
@@ -241,13 +237,13 @@ class _FilterBarState extends ConsumerState<_FilterBar> {
                 child: FilterChip(
                   label: Text(label,
                       style: GoogleFonts.lato(
-                          color: selected ? Colors.black : Colors.white70,
+                          color: selected ? Colors.white : null,
                           fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
                   selected: selected,
                   selectedColor: _kIncome,
-                  backgroundColor: _kCardLight,
-                  checkmarkColor: Colors.black,
-                  side: BorderSide.none,
+                  backgroundColor: Theme.of(context).cardColor,
+                  checkmarkColor: Colors.white,
+                  side: BorderSide(color: Colors.grey.withOpacity(0.2)),
                   onSelected: (_) {
                     if (label == 'Custom') {
                       _pickCustom();
@@ -267,29 +263,32 @@ class _FilterBarState extends ConsumerState<_FilterBar> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: _kCard,
+          child: Card(
+            elevation: 2,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kIncome.withOpacity(0.3)),
+              side: BorderSide(color: _kIncome.withOpacity(0.3)),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Icon(Icons.date_range_rounded, color: _kIncome, size: 18),
                 const SizedBox(width: 8),
                 Text(_fmt.format(filter.from),
-                    style: GoogleFonts.lato(color: Colors.white70)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                    style: GoogleFonts.lato()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white38, size: 16),
+                      color: Theme.of(context).iconTheme.color?.withOpacity(0.5), size: 16),
                 ),
                 Text(_fmt.format(filter.to),
-                    style: GoogleFonts.lato(color: Colors.white70)),
+                    style: GoogleFonts.lato()),
                 const Spacer(),
               ],
+            ),
             ),
           ),
         ),
@@ -312,18 +311,16 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final display = isCurrency ? _cur.format(value) : value.toInt().toString();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _kCard,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.25)),
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))
-        ],
+        side: BorderSide(color: color.withOpacity(0.25)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -335,13 +332,13 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(display,
               style: GoogleFonts.montserrat(
-                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 18)),
           const SizedBox(height: 4),
           Text(label,
-              style: GoogleFonts.lato(color: Colors.white54, fontSize: 12)),
+              style: GoogleFonts.lato(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
         ],
+      ),
       ),
     );
   }
@@ -375,22 +372,23 @@ class _MonthlyChart extends ConsumerWidget {
               1.0,
             ].reduce((a, b) => a > b ? a : b);
 
-            return Container(
-              height: 220,
+            return Card(
+              elevation: 2,
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
-              decoration: BoxDecoration(
-                color: _kCard,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                side: BorderSide(color: Colors.grey.withOpacity(0.2)),
               ),
-              child: BarChart(
+              child: Container(
+                height: 220,
+                padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+                child: BarChart(
                 BarChartData(
                   maxY: maxVal * 1.25,
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => _kCardLight,
+                      getTooltipColor: (_) => Theme.of(context).colorScheme.surface,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final label = rodIndex == 0 ? 'Income' : 'Expense';
                         return BarTooltipItem(
@@ -415,8 +413,7 @@ class _MonthlyChart extends ConsumerWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               DateFormat('MMM').format(m),
-                              style: GoogleFonts.lato(
-                                  color: Colors.white38, fontSize: 9),
+                              style: GoogleFonts.lato(fontSize: 9),
                             ),
                           );
                         },
@@ -433,7 +430,7 @@ class _MonthlyChart extends ConsumerWidget {
                   gridData: FlGridData(
                     show: true,
                     getDrawingHorizontalLine: (_) =>
-                        FlLine(color: Colors.white10, strokeWidth: 1),
+                        FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
                     drawVerticalLine: false,
                   ),
                   borderData: FlBorderData(show: false),
@@ -464,9 +461,10 @@ class _MonthlyChart extends ConsumerWidget {
                   }),
                 ),
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
     );
   }
@@ -483,21 +481,22 @@ class _MethodBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = total > 0 ? (amount / total).clamp(0.0, 1.0) : 0.0;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _kCard,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label,
-                  style: GoogleFonts.lato(color: Colors.white70, fontSize: 13)),
+                  style: GoogleFonts.lato(fontSize: 13)),
               Text(_cur.format(amount),
                   style: GoogleFonts.montserrat(
                       color: color,
@@ -511,14 +510,15 @@ class _MethodBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 8,
-              backgroundColor: Colors.white10,
+              backgroundColor: Colors.grey.withOpacity(0.2),
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),
           const SizedBox(height: 4),
           Text('${(pct * 100).toStringAsFixed(1)}% of total income',
-              style: GoogleFonts.lato(color: Colors.white38, fontSize: 11)),
+              style: GoogleFonts.lato(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
         ],
+      ),
       ),
     );
   }
@@ -562,13 +562,14 @@ class _TransactionsTabState extends ConsumerState<_TransactionsTab>
     return Column(
       children: [
         const _FilterBar(),
-        Container(
-          color: _kCard,
+        Material(
+          elevation: 2,
+          color: Theme.of(context).cardColor,
           child: TabBar(
             controller: _sub,
             indicatorColor: _kIncome,
             labelColor: _kIncome,
-            unselectedLabelColor: Colors.white54,
+            unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
             labelStyle:
                 GoogleFonts.lato(fontWeight: FontWeight.bold, fontSize: 13),
             tabs: [
@@ -669,7 +670,7 @@ class _PendingList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (members.isEmpty) {
-      return _EmptyState('No pending dues', Icons.check_circle_rounded);
+      return const _EmptyState('No pending dues', Icons.check_circle_rounded);
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -715,15 +716,17 @@ class _TxCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _kCard,
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        side: BorderSide(color: color.withOpacity(0.2)),
       ),
-      child: Row(
-        children: [
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -739,7 +742,6 @@ class _TxCard extends StatelessWidget {
               children: [
                 Text(title,
                     style: GoogleFonts.lato(
-                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14),
                     maxLines: 1,
@@ -747,7 +749,7 @@ class _TxCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(subtitle,
                     style:
-                        GoogleFonts.lato(color: Colors.white54, fontSize: 12),
+                        GoogleFonts.lato(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
               ],
@@ -767,10 +769,11 @@ class _TxCard extends StatelessWidget {
               if (amountLabel != null)
                 Text(amountLabel!,
                     style:
-                        GoogleFonts.lato(color: Colors.white38, fontSize: 11)),
+                        GoogleFonts.lato(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -788,10 +791,10 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 56, color: Colors.white24),
+          Icon(icon, size: 56, color: Colors.grey),
           const SizedBox(height: 12),
           Text(message,
-              style: GoogleFonts.lato(color: Colors.white38, fontSize: 16)),
+              style: GoogleFonts.lato(fontSize: 16, color: Theme.of(context).textTheme.bodySmall?.color)),
         ],
       ),
     );

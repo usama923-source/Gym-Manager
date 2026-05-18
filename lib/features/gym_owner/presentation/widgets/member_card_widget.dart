@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 import 'package:gym/features/gym_owner/domain/models/attendance_model.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
+import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 
 class MemberCardWidget extends ConsumerWidget {
   final MemberModel member;
@@ -146,7 +147,10 @@ class MemberCardWidget extends ConsumerWidget {
                   ),
                   TextButton.icon(
                     onPressed: () {
-                      // TODO: Implement Renew
+                      showDialog(
+                        context: context,
+                        builder: (context) => _RenewPlanDialog(member: member),
+                      );
                     },
                     icon: const Icon(Icons.autorenew, color: Colors.green),
                     label: const Text('Renew Plan'),
@@ -158,5 +162,146 @@ class MemberCardWidget extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _RenewPlanDialog extends ConsumerStatefulWidget {
+  final MemberModel member;
+
+  const _RenewPlanDialog({required this.member});
+
+  @override
+  ConsumerState<_RenewPlanDialog> createState() => _RenewPlanDialogState();
+}
+
+class _RenewPlanDialogState extends ConsumerState<_RenewPlanDialog> {
+  String _paymentStatus = 'Pending';
+  String _paymentMethod = 'Cash';
+  final List<String> _paymentMethods = ['Cash', 'EasyPaisa', 'Jazz Cash', 'Bank Transfer'];
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Renew Plan'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<String>(
+            decoration: const InputDecoration(labelText: 'Payment Status'),
+            value: _paymentStatus,
+            items: ['Pending', 'Received']
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _paymentStatus = val);
+            },
+          ),
+          if (_paymentStatus == 'Received') ...[
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(labelText: 'Payment Method'),
+              value: _paymentMethod,
+              items: _paymentMethods
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _paymentMethod = val);
+              },
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+            : const Text('Renew'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(gymOwnerRepositoryProvider);
+      final now = DateTime.now();
+      
+      // Calculate new expiry date (+30 days)
+      DateTime newExpiry = widget.member.expiryDate ?? now;
+      if (newExpiry.isBefore(now)) {
+        newExpiry = now;
+      }
+      newExpiry = newExpiry.add(const Duration(days: 30));
+
+      final planAmount = widget.member.monthlyPlanAmount ?? 0.0;
+      double newPaidAmount = 0.0;
+      
+      if (_paymentStatus == 'Received') {
+        newPaidAmount = planAmount;
+        
+        if (planAmount > 0) {
+          final payment = PaymentModel(
+            id: 'temp',
+            gymId: widget.member.gymId,
+            memberId: widget.member.id,
+            amount: planAmount,
+            paymentDate: now,
+            paymentMethod: _paymentMethod,
+            createdAt: now,
+          );
+          await repo.addPayment(payment);
+        }
+      }
+
+      final updatedMember = MemberModel(
+        id: widget.member.id,
+        gymId: widget.member.gymId,
+        name: widget.member.name,
+        phone: widget.member.phone,
+        email: widget.member.email,
+        membershipType: widget.member.membershipType,
+        startDate: widget.member.startDate,
+        expiryDate: newExpiry,
+        trainerId: widget.member.trainerId,
+        isActive: widget.member.isActive,
+        createdAt: widget.member.createdAt,
+        profilePhotoUrl: widget.member.profilePhotoUrl,
+        gender: widget.member.gender,
+        memberId: widget.member.memberId,
+        monthlyPlanAmount: widget.member.monthlyPlanAmount,
+        paymentDate: now,
+        paidAmount: newPaidAmount,
+        paymentMethod: _paymentStatus == 'Received' ? _paymentMethod : widget.member.paymentMethod,
+        admissionFee: widget.member.admissionFee,
+        dateOfBirth: widget.member.dateOfBirth,
+        address: widget.member.address,
+        isDeleted: widget.member.isDeleted,
+        deletedAt: widget.member.deletedAt,
+      );
+
+      await repo.updateMember(updatedMember);
+      
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plan renewed successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 }

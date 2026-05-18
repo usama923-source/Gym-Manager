@@ -141,13 +141,15 @@ class GymOwnerRepository {
     return _firestore
         .collection('payments')
         .where('gymId', isEqualTo: gymId)
-        .where('paymentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('paymentDate', isLessThanOrEqualTo: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) {
       double total = 0;
       for (var doc in snapshot.docs) {
-        total += (doc.data()['amount'] ?? 0.0).toDouble();
+        final date = (doc.data()['paymentDate'] as Timestamp?)?.toDate() ?? DateTime.now();
+        if (date.isAfter(start.subtract(const Duration(seconds: 1))) && 
+            date.isBefore(end.add(const Duration(seconds: 1)))) {
+          total += (doc.data()['amount'] ?? 0.0).toDouble();
+        }
       }
       return total;
     });
@@ -160,12 +162,12 @@ class GymOwnerRepository {
     return _firestore
         .collection('payments')
         .where('gymId', isEqualTo: gymId)
-        .where('paymentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('paymentDate', isLessThanOrEqualTo: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) {
       final list = snapshot.docs
           .map((doc) => PaymentModel.fromMap(doc.data(), doc.id))
+          .where((p) => p.paymentDate.isAfter(start.subtract(const Duration(seconds: 1))) && 
+                        p.paymentDate.isBefore(end.add(const Duration(seconds: 1))))
           .toList();
       list.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
       return list;
@@ -179,13 +181,15 @@ class GymOwnerRepository {
     return _firestore
         .collection('expenses')
         .where('gymId', isEqualTo: gymId)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) {
       double total = 0;
       for (var doc in snapshot.docs) {
-        total += (doc.data()['amount'] ?? 0.0).toDouble();
+        final date = (doc.data()['date'] as Timestamp?)?.toDate() ?? DateTime.now();
+        if (date.isAfter(start.subtract(const Duration(seconds: 1))) && 
+            date.isBefore(end.add(const Duration(seconds: 1)))) {
+          total += (doc.data()['amount'] ?? 0.0).toDouble();
+        }
       }
       return total;
     });
@@ -200,12 +204,12 @@ class GymOwnerRepository {
     return _firestore
         .collection('payments')
         .where('gymId', isEqualTo: gymId)
-        .where('paymentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('paymentDate', isLessThanOrEqualTo: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) {
       final list = snapshot.docs
           .map((doc) => PaymentModel.fromMap(doc.data(), doc.id))
+          .where((p) => p.paymentDate.isAfter(start.subtract(const Duration(seconds: 1))) && 
+                        p.paymentDate.isBefore(end.add(const Duration(seconds: 1))))
           .toList();
       list.sort((a, b) => b.paymentDate.compareTo(a.paymentDate));
       return list;
@@ -219,12 +223,12 @@ class GymOwnerRepository {
     return _firestore
         .collection('expenses')
         .where('gymId', isEqualTo: gymId)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) {
       final list = snapshot.docs
           .map((doc) => ExpenseModel.fromMap(doc.data(), doc.id))
+          .where((e) => e.date.isAfter(start.subtract(const Duration(seconds: 1))) && 
+                        e.date.isBefore(end.add(const Duration(seconds: 1))))
           .toList();
       list.sort((a, b) => b.date.compareTo(a.date));
       return list;
@@ -235,22 +239,30 @@ class GymOwnerRepository {
   Future<List<double>> getLast12MonthsIncome(String gymId) async {
     final now = DateTime.now();
     final List<double> result = [];
+    
+    // Fetch all payments to avoid missing index errors and multiple queries
+    final snapshot = await _firestore
+        .collection('payments')
+        .where('gymId', isEqualTo: gymId)
+        .get();
+        
+    final allPayments = snapshot.docs
+        .map((doc) => PaymentModel.fromMap(doc.data(), doc.id))
+        .toList();
+
     for (int i = 11; i >= 0; i--) {
       final month = now.month - i;
       final year = now.year + (month <= 0 ? -1 : 0);
       final adjustedMonth = month <= 0 ? month + 12 : month;
       final start = DateTime(year, adjustedMonth, 1);
       final end = DateTime(year, adjustedMonth + 1, 0, 23, 59, 59);
-      final snapshot = await _firestore
-          .collection('payments')
-          .where('gymId', isEqualTo: gymId)
-          .where('paymentDate',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-          .where('paymentDate', isLessThanOrEqualTo: Timestamp.fromDate(end))
-          .get();
+      
       double total = 0;
-      for (var doc in snapshot.docs) {
-        total += (doc.data()['amount'] ?? 0.0).toDouble();
+      for (var payment in allPayments) {
+        if (payment.paymentDate.isAfter(start.subtract(const Duration(seconds: 1))) && 
+            payment.paymentDate.isBefore(end.add(const Duration(seconds: 1)))) {
+          total += payment.amount;
+        }
       }
       result.add(total);
     }
@@ -261,21 +273,30 @@ class GymOwnerRepository {
   Future<List<double>> getLast12MonthsExpenses(String gymId) async {
     final now = DateTime.now();
     final List<double> result = [];
+    
+    // Fetch all expenses to avoid missing index errors and multiple queries
+    final snapshot = await _firestore
+        .collection('expenses')
+        .where('gymId', isEqualTo: gymId)
+        .get();
+    
+    final allExpenses = snapshot.docs
+        .map((doc) => ExpenseModel.fromMap(doc.data(), doc.id))
+        .toList();
+
     for (int i = 11; i >= 0; i--) {
       final month = now.month - i;
       final year = now.year + (month <= 0 ? -1 : 0);
       final adjustedMonth = month <= 0 ? month + 12 : month;
       final start = DateTime(year, adjustedMonth, 1);
       final end = DateTime(year, adjustedMonth + 1, 0, 23, 59, 59);
-      final snapshot = await _firestore
-          .collection('expenses')
-          .where('gymId', isEqualTo: gymId)
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(end))
-          .get();
+      
       double total = 0;
-      for (var doc in snapshot.docs) {
-        total += (doc.data()['amount'] ?? 0.0).toDouble();
+      for (var expense in allExpenses) {
+        if (expense.date.isAfter(start.subtract(const Duration(seconds: 1))) && 
+            expense.date.isBefore(end.add(const Duration(seconds: 1)))) {
+          total += expense.amount;
+        }
       }
       result.add(total);
     }

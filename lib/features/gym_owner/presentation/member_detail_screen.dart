@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/presentation/providers/gym_owner_providers.dart';
 import 'package:gym/features/gym_owner/presentation/widgets/member_card_widget.dart';
+import 'package:go_router/go_router.dart';
 
 class MemberDetailScreen extends ConsumerWidget {
   final MemberModel member;
@@ -21,6 +22,14 @@ class MemberDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Member Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              context.push('/add-member', extra: member);
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
