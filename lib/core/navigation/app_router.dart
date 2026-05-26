@@ -14,6 +14,7 @@ import 'package:gym/features/gym_owner/presentation/add_member_screen.dart';
 import 'package:gym/features/gym_owner/presentation/edit_profile_screen.dart';
 import 'package:gym/features/gym_owner/presentation/expenses_screen.dart';
 import 'package:gym/features/gym_owner/presentation/screens/deleted_members_screen.dart';
+import 'package:gym/features/gym_owner/presentation/screens/expired_members_screen.dart';
 import 'package:gym/features/gym_owner/presentation/screens/income_report_screen.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 
@@ -85,6 +86,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/deleted-members',
         builder: (context, state) => const DeletedMembersScreen(),
+      ),
+      GoRoute(
+        path: '/expired-members',
+        builder: (context, state) => const ExpiredMembersScreen(),
       ),
       GoRoute(
         path: '/income-report',

@@ -4,6 +4,7 @@ import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/domain/models/attendance_model.dart';
 import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 import 'package:gym/features/gym_owner/domain/models/expense_model.dart';
+import 'package:gym/features/gym_owner/domain/models/member_transaction_model.dart';
 import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 
 // Provides the current Gym ID based on authenticated user
@@ -102,6 +103,24 @@ final expiringTodayProvider = Provider<List<MemberModel>>((ref) {
   );
 });
 
+final expiredMembersProvider = Provider<List<MemberModel>>((ref) {
+  final membersResult = ref.watch(membersProvider);
+  return membersResult.when(
+    data: (members) {
+      final now = DateTime.now();
+      return members.where((m) {
+        final expiry = m.expiryDate;
+        if (expiry == null) return false;
+        // Expired if expiryDate is before today (start of today to avoid false positives for today)
+        final todayStart = DateTime(now.year, now.month, now.day);
+        return expiry.isBefore(todayStart);
+      }).toList();
+    },
+    loading: () => [],
+    error: (error, stackTrace) => [],
+  );
+});
+
 final birthdaysThisMonthProvider = Provider<List<MemberModel>>((ref) {
   final membersResult = ref.watch(membersProvider);
   return membersResult.when(
@@ -168,6 +187,14 @@ final memberAttendancesProvider =
       return ref
           .watch(gymOwnerRepositoryProvider)
           .getMemberAttendances(memberId);
+    });
+
+final memberTransactionsProvider =
+    StreamProvider.family<List<MemberTransactionModel>, String>(
+        (ref, memberId) {
+      return ref
+          .watch(gymOwnerRepositoryProvider)
+          .getMemberTransactions(memberId);
     });
 
 // ─── Report Screen Filter ────────────────────────────────────────────────────

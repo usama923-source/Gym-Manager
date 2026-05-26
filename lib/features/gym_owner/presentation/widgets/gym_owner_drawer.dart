@@ -88,7 +88,7 @@ class GymOwnerDrawer extends ConsumerWidget {
                     title: const Text('Expired Members'),
                     onTap: () {
                       context.pop();
-                      // TODO: Implement Expired Members
+                      context.push('/expired-members');
                     },
                   ),
                 ],

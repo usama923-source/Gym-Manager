@@ -149,7 +149,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
@@ -158,8 +158,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             ),
           );
         },
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Member'),
+        child: const Icon(Icons.person_add),
       ),
     );
   }

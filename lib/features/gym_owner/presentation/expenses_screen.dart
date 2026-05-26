@@ -163,10 +163,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error loading expenses: $e')),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddExpenseModal(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Expense'),
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -255,10 +255,9 @@ class GymOwnerDashboard extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/add-member'),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Member'),
+        child: const Icon(Icons.person_add),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:gym/features/gym_owner/domain/models/expense_model.dart';
 import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/domain/models/attendance_model.dart';
+import 'package:gym/features/gym_owner/domain/models/member_transaction_model.dart';
 import 'package:gym/features/auth/domain/models/gym_model.dart';
 
 final gymOwnerRepositoryProvider = Provider<GymOwnerRepository>((ref) {
@@ -336,6 +337,25 @@ class GymOwnerRepository {
         .map((snapshot) {
       final list = snapshot.docs
           .map((doc) => AttendanceModel.fromMap(doc.data(), doc.id))
+          .toList();
+      list.sort((a, b) => b.date.compareTo(a.date));
+      return list;
+    });
+  }
+
+  // --- Member Payment Transactions (dues & refunds) ---
+  Future<void> addMemberTransaction(MemberTransactionModel tx) async {
+    await _firestore.collection('member_transactions').doc().set(tx.toMap());
+  }
+
+  Stream<List<MemberTransactionModel>> getMemberTransactions(String memberId) {
+    return _firestore
+        .collection('member_transactions')
+        .where('memberId', isEqualTo: memberId)
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => MemberTransactionModel.fromMap(doc.data(), doc.id))
           .toList();
       list.sort((a, b) => b.date.compareTo(a.date));
       return list;
