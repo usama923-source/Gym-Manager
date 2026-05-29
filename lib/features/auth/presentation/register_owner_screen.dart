@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:gym/core/widgets/custom_text_field.dart';
 import 'providers/auth_provider.dart';
 
+import 'package:gym/core/theme/app_theme.dart';
+
 class RegisterOwnerScreen extends ConsumerStatefulWidget {
   const RegisterOwnerScreen({super.key});
 
@@ -30,7 +32,7 @@ class _RegisterOwnerScreenState extends ConsumerState<RegisterOwnerScreen> {
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration Failed: \$e')),
+          SnackBar(content: Text('Registration Failed: $e')),
         );
       }
     }
@@ -56,9 +58,11 @@ class _RegisterOwnerScreenState extends ConsumerState<RegisterOwnerScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
+          child: Theme(
+            data: AppTheme.getFormTheme(context),
+            child: Form(
+              key: _formKey,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
@@ -115,6 +119,7 @@ class _RegisterOwnerScreenState extends ConsumerState<RegisterOwnerScreen> {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),

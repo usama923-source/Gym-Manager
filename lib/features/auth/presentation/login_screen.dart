@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:gym/core/widgets/custom_text_field.dart';
 import 'providers/auth_provider.dart';
 
+import 'package:gym/core/theme/app_theme.dart';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -26,7 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login Failed: \$e')),
+          SnackBar(content: Text('Login Failed: $e')),
         );
       }
     }
@@ -48,9 +50,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
+            child: Theme(
+              data: AppTheme.getFormTheme(context),
+              child: Form(
+                key: _formKey,
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -117,6 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ),

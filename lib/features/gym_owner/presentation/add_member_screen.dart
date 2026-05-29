@@ -8,6 +8,8 @@ import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 import 'package:intl/intl.dart';
 
+import 'package:gym/core/theme/app_theme.dart';
+
 class AddMemberScreen extends ConsumerStatefulWidget {
   final MemberModel? member;
 
@@ -149,7 +151,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: \$e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -162,9 +164,11 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       appBar: AppBar(title: Text(widget.member == null ? 'Add Member' : 'Edit Member')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
+        child: Theme(
+          data: AppTheme.getFormTheme(context),
+          child: Form(
+            key: _formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CustomTextField(
@@ -283,6 +287,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

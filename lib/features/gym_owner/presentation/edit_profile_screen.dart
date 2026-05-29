@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym/features/auth/presentation/providers/auth_provider.dart';
+import 'package:gym/core/theme/app_theme.dart';
 import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -107,8 +108,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Theme(
+          data: AppTheme.getFormTheme(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Profile Update Section
             Text('Profile Information', style: Theme.of(context).textTheme.titleLarge),
@@ -200,6 +203,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

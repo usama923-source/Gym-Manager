@@ -4,6 +4,8 @@ import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.da
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/domain/models/payment_model.dart';
 
+import 'package:gym/core/theme/app_theme.dart';
+
 class RenewPlanDialog extends ConsumerStatefulWidget {
   final MemberModel member;
 
@@ -40,9 +42,11 @@ class _RenewPlanDialogState extends ConsumerState<RenewPlanDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Renew Plan'),
-      content: SingleChildScrollView(
+    return Theme(
+      data: AppTheme.getFormTheme(context),
+      child: AlertDialog(
+        title: const Text('Renew Plan'),
+        content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +104,7 @@ class _RenewPlanDialogState extends ConsumerState<RenewPlanDialog> {
             : const Text('Renew'),
         ),
       ],
+    ),
     );
   }
 

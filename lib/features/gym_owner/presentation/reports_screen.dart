@@ -562,6 +562,7 @@ class _TransactionsTabState extends ConsumerState<_TransactionsTab>
     return Column(
       children: [
         const _FilterBar(),
+        const SizedBox(height: 12),
         Material(
           elevation: 2,
           color: Theme.of(context).cardColor,

@@ -91,4 +91,47 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData getFormTheme(BuildContext context) {
+    final parent = Theme.of(context);
+    const blueColor = Color(0xFF1976D2);
+    return parent.copyWith(
+      colorScheme: parent.colorScheme.copyWith(
+        primary: blueColor,
+        primaryContainer: blueColor,
+      ),
+      textSelectionTheme: parent.textSelectionTheme.copyWith(
+        cursorColor: blueColor,
+      ),
+      inputDecorationTheme: parent.inputDecorationTheme.copyWith(
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: blueColor, width: 2),
+        ),
+        floatingLabelStyle: const TextStyle(color: blueColor),
+        prefixIconColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.focused)) {
+            return blueColor;
+          }
+          return Colors.grey;
+        }),
+        suffixIconColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.focused)) {
+            return blueColor;
+          }
+          return Colors.grey;
+        }),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: blueColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
 }

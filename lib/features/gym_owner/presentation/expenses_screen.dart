@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gym/features/gym_owner/domain/models/expense_model.dart';
 import 'package:gym/features/gym_owner/data/repositories/gym_owner_repository.dart';
 import 'package:gym/features/gym_owner/presentation/providers/gym_owner_providers.dart';
+import 'package:gym/core/theme/app_theme.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   const ExpensesScreen({super.key});
@@ -333,9 +334,11 @@ class _AddExpenseFormState extends ConsumerState<_AddExpenseForm> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
+      child: Theme(
+        data: AppTheme.getFormTheme(context),
+        child: Form(
+          key: _formKey,
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -417,6 +420,7 @@ class _AddExpenseFormState extends ConsumerState<_AddExpenseForm> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

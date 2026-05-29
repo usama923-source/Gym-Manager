@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gym/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:gym/features/gym_owner/domain/models/member_model.dart';
 import 'package:gym/features/gym_owner/domain/models/member_transaction_model.dart';
@@ -563,9 +564,11 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
+      child: Theme(
+        data: AppTheme.getFormTheme(context),
+        child: Form(
+          key: _formKey,
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -719,6 +722,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

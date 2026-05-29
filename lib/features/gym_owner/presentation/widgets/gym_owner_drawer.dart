@@ -52,27 +52,11 @@ class GymOwnerDrawer extends ConsumerWidget {
                     ),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.store),
-                    title: const Text('Manage Branch'),
-                    onTap: () {
-                      context.pop();
-                      // TODO: Implement Manage Branch
-                    },
-                  ),
-                  ListTile(
                     leading: const Icon(Icons.attach_money),
                     title: const Text('Expenses'),
                     onTap: () {
                       context.pop();
                       context.push('/expenses');
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.download),
-                    title: const Text('Member Reports Downloads'),
-                    onTap: () {
-                      context.pop();
-                      // TODO: Implement Member Reports Downloads
                     },
                   ),
                   ListTile(
