@@ -565,12 +565,12 @@ class _TransactionsTabState extends ConsumerState<_TransactionsTab>
         const SizedBox(height: 12),
         Material(
           elevation: 2,
-          color: Theme.of(context).cardColor,
+          color: Theme.of(context).colorScheme.primary,
           child: TabBar(
             controller: _sub,
-            indicatorColor: _kIncome,
-            labelColor: _kIncome,
-            unselectedLabelColor: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.7),
             labelStyle:
                 GoogleFonts.lato(fontWeight: FontWeight.bold, fontSize: 13),
             tabs: [

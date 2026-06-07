@@ -94,37 +94,37 @@ class AppTheme {
 
   static ThemeData getFormTheme(BuildContext context) {
     final parent = Theme.of(context);
-    const blueColor = Color(0xFF1976D2);
+    final themeColor = parent.colorScheme.primary;
     return parent.copyWith(
       colorScheme: parent.colorScheme.copyWith(
-        primary: blueColor,
-        primaryContainer: blueColor,
+        primary: themeColor,
+        primaryContainer: themeColor,
       ),
       textSelectionTheme: parent.textSelectionTheme.copyWith(
-        cursorColor: blueColor,
+        cursorColor: themeColor,
       ),
       inputDecorationTheme: parent.inputDecorationTheme.copyWith(
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: blueColor, width: 2),
+          borderSide: BorderSide(color: themeColor, width: 2),
         ),
-        floatingLabelStyle: const TextStyle(color: blueColor),
+        floatingLabelStyle: TextStyle(color: themeColor),
         prefixIconColor: WidgetStateColor.resolveWith((states) {
           if (states.contains(WidgetState.focused)) {
-            return blueColor;
+            return themeColor;
           }
           return Colors.grey;
         }),
         suffixIconColor: WidgetStateColor.resolveWith((states) {
           if (states.contains(WidgetState.focused)) {
-            return blueColor;
+            return themeColor;
           }
           return Colors.grey;
         }),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: blueColor,
+          backgroundColor: themeColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(

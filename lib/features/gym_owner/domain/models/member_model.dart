@@ -1,5 +1,50 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class WeightEntry {
+  final DateTime date;
+  final double weight;
+
+  WeightEntry({required this.date, required this.weight});
+
+  factory WeightEntry.fromMap(Map<String, dynamic> map) {
+    return WeightEntry(
+      date: (map['date'] as Timestamp).toDate(),
+      weight: (map['weight'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': Timestamp.fromDate(date),
+      'weight': weight,
+    };
+  }
+}
+
+class InjuryEntry {
+  final DateTime date;
+  final String description;
+  final String notes;
+
+  InjuryEntry({required this.date, required this.description, this.notes = ''});
+
+  factory InjuryEntry.fromMap(Map<String, dynamic> map) {
+    return InjuryEntry(
+      date: (map['date'] as Timestamp).toDate(),
+      description: map['description'] ?? '',
+      notes: map['notes'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': Timestamp.fromDate(date),
+      'description': description,
+      'notes': notes,
+    };
+  }
+}
+
 class MemberModel {
   final String id; // document ID
   final String gymId;
@@ -27,6 +72,10 @@ class MemberModel {
   final bool? isDeleted;
   final DateTime? deletedAt;
 
+  // Progress/History fields
+  final List<WeightEntry> weightHistory;
+  final List<InjuryEntry> injuryHistory;
+
   MemberModel({
     required this.id,
     required this.gymId,
@@ -51,6 +100,8 @@ class MemberModel {
     this.address,
     this.isDeleted,
     this.deletedAt,
+    this.weightHistory = const [],
+    this.injuryHistory = const [],
   });
 
   bool get isMembershipActive => expiryDate != null 
@@ -82,6 +133,14 @@ class MemberModel {
       address: map['address'],
       isDeleted: map['isDeleted'],
       deletedAt: map['deletedAt'] != null ? (map['deletedAt'] as Timestamp).toDate() : null,
+      weightHistory: (map['weightHistory'] as List?)
+              ?.map((e) => WeightEntry.fromMap(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
+      injuryHistory: (map['injuryHistory'] as List?)
+              ?.map((e) => InjuryEntry.fromMap(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
     );
   }
 
@@ -109,6 +168,64 @@ class MemberModel {
       if (address != null) 'address': address,
       if (isDeleted != null) 'isDeleted': isDeleted,
       if (deletedAt != null) 'deletedAt': Timestamp.fromDate(deletedAt!),
+      'weightHistory': weightHistory.map((e) => e.toMap()).toList(),
+      'injuryHistory': injuryHistory.map((e) => e.toMap()).toList(),
     };
+  }
+
+  MemberModel copyWith({
+    String? id,
+    String? gymId,
+    String? name,
+    String? phone,
+    String? email,
+    String? membershipType,
+    DateTime? startDate,
+    DateTime? expiryDate,
+    String? trainerId,
+    bool? isActive,
+    DateTime? createdAt,
+    String? profilePhotoUrl,
+    String? gender,
+    String? memberId,
+    double? monthlyPlanAmount,
+    DateTime? paymentDate,
+    double? paidAmount,
+    String? paymentMethod,
+    double? admissionFee,
+    DateTime? dateOfBirth,
+    String? address,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    List<WeightEntry>? weightHistory,
+    List<InjuryEntry>? injuryHistory,
+  }) {
+    return MemberModel(
+      id: id ?? this.id,
+      gymId: gymId ?? this.gymId,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      membershipType: membershipType ?? this.membershipType,
+      startDate: startDate ?? this.startDate,
+      expiryDate: expiryDate ?? this.expiryDate,
+      trainerId: trainerId ?? this.trainerId,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
+      gender: gender ?? this.gender,
+      memberId: memberId ?? this.memberId,
+      monthlyPlanAmount: monthlyPlanAmount ?? this.monthlyPlanAmount,
+      paymentDate: paymentDate ?? this.paymentDate,
+      paidAmount: paidAmount ?? this.paidAmount,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      admissionFee: admissionFee ?? this.admissionFee,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      address: address ?? this.address,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      weightHistory: weightHistory ?? this.weightHistory,
+      injuryHistory: injuryHistory ?? this.injuryHistory,
+    );
   }
 }

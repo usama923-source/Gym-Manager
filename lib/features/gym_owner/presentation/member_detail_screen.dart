@@ -23,6 +23,13 @@ class MemberDetailScreen extends ConsumerWidget {
     final todayAttendancesAsync = ref.watch(todayAttendanceProvider);
     final todayAttendances = todayAttendancesAsync.value ?? [];
 
+    final membersAsync = ref.watch(membersProvider);
+    final currentMember = membersAsync.value?.firstWhere(
+          (m) => m.id == member.id,
+          orElse: () => member,
+        ) ??
+        member;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Member Details'),
@@ -30,7 +37,7 @@ class MemberDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              context.push('/add-member', extra: member);
+              context.push('/add-member', extra: currentMember);
             },
           ),
         ],
@@ -38,31 +45,37 @@ class MemberDetailScreen extends ConsumerWidget {
       body: Column(
         children: [
           MemberCardWidget(
-            member: member,
+            member: currentMember,
             attendances: todayAttendances,
           ),
           const SizedBox(height: 8),
           Expanded(
             child: DefaultTabController(
-              length: 3,
+              length: 4,
               child: Column(
                 children: [
-                  const TabBar(
-                    tabs: [
-                      Tab(text: 'Plan History'),
-                      Tab(text: 'Attendance'),
-                      Tab(text: 'Transactions'),
-                    ],
-                    labelColor: Colors.blue,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: Colors.blue,
+                  Material(
+                    elevation: 2,
+                    color: Theme.of(context).colorScheme.primary,
+                    child: TabBar(
+                      tabs: const [
+                        Tab(text: 'Plan History'),
+                        Tab(text: 'Attendance'),
+                        Tab(text: 'Transactions'),
+                        Tab(text: 'Progress'),
+                      ],
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white.withOpacity(0.7),
+                      indicatorColor: Colors.white,
+                    ),
                   ),
                   Expanded(
                     child: TabBarView(
                       children: [
-                        _PlanHistoryTab(memberId: member.id),
-                        _AttendanceHistoryTab(memberId: member.id),
-                        _TransactionsTab(member: member),
+                        _PlanHistoryTab(memberId: currentMember.id),
+                        _AttendanceHistoryTab(memberId: currentMember.id),
+                        _TransactionsTab(member: currentMember),
+                        _ProgressTab(member: currentMember),
                       ],
                     ),
                   ),
@@ -165,10 +178,10 @@ class _AttendanceHistoryTab extends ConsumerWidget {
                     margin: const EdgeInsets.symmetric(
                         vertical: 4.0, horizontal: 8.0),
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.blue,
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         child:
-                            Icon(Icons.directions_run, color: Colors.white),
+                            const Icon(Icons.directions_run, color: Colors.white),
                       ),
                       title: Text(
                           DateFormat('EEEE, MMM dd').format(attendance.date)),
@@ -229,7 +242,7 @@ class _TransactionsTab extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -312,14 +325,17 @@ class _LedgerSummaryHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade800, Colors.blue.shade500],
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -776,6 +792,474 @@ class _TypeButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Progress Tab ────────────────────────────────────────────────────────────
+
+class _ProgressTab extends ConsumerWidget {
+  final MemberModel member;
+
+  const _ProgressTab({required this.member});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final attendancesAsync = ref.watch(memberAttendancesProvider(member.id));
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section 1: Average Session Duration & Attendance Stats
+          attendancesAsync.when(
+            data: (attendances) {
+              final completedSessions = attendances.where((a) => a.checkOutTime != null).toList();
+              String avgDurationStr = 'N/A';
+              
+              if (completedSessions.isNotEmpty) {
+                double totalMinutes = 0;
+                for (var session in completedSessions) {
+                  totalMinutes += session.checkOutTime!.difference(session.checkInTime).inMinutes;
+                }
+                final avgMinutes = (totalMinutes / completedSessions.length).round();
+                final hours = avgMinutes ~/ 60;
+                final mins = avgMinutes % 60;
+                if (hours > 0) {
+                  avgDurationStr = '${hours}h ${mins}m';
+                } else {
+                  avgDurationStr = '${mins}m';
+                }
+              }
+
+              return Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                        child: Icon(Icons.timer, color: theme.colorScheme.primary, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Daily Avg Time in Gym',
+                              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              avgDurationStr,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total Visits',
+                            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ),
+                          Text(
+                            '${attendances.length}',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => const Text('Error loading attendance stats'),
+          ),
+          const SizedBox(height: 20),
+
+          // Section 2: Weight History
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Weight History',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () => _showAddWeightDialog(context, ref),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Weight', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildWeightSection(context, theme),
+          
+          const SizedBox(height: 24),
+
+          // Section 3: Injury History
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Injury History',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () => _showAddInjuryDialog(context, ref),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Injury', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildInjurySection(context, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeightSection(BuildContext context, ThemeData theme) {
+    if (member.weightHistory.isEmpty) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Center(
+            child: Text(
+              'No weight records entered yet.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Sort weightHistory by date descending
+    final sortedWeightList = List<WeightEntry>.from(member.weightHistory)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    // Get current weight (latest date)
+    final currentWeight = sortedWeightList.first.weight;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Current Weight Info Card
+        Card(
+          color: theme.colorScheme.primary.withOpacity(0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.1)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Current Recorded Weight', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  '${currentWeight.toStringAsFixed(1)} kg',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // History List
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: sortedWeightList.length,
+          itemBuilder: (context, index) {
+            final entry = sortedWeightList[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4.0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              child: ListTile(
+                leading: const Icon(Icons.monitor_weight_outlined),
+                title: Text('${entry.weight} kg', style: const TextStyle(fontWeight: FontWeight.bold)),
+                trailing: Text(
+                  DateFormat('MMM dd, yyyy').format(entry.date),
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInjurySection(BuildContext context, ThemeData theme) {
+    if (member.injuryHistory.isEmpty) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Center(
+            child: Text(
+              'No injury history recorded.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final sortedInjuryList = List<InjuryEntry>.from(member.injuryHistory)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: sortedInjuryList.length,
+      itemBuilder: (context, index) {
+        final entry = sortedInjuryList[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4.0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: ListTile(
+            leading: Icon(Icons.personal_injury_outlined, color: theme.colorScheme.error),
+            title: Text(entry.description, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: entry.notes.isNotEmpty ? Text(entry.notes) : null,
+            trailing: Text(
+              DateFormat('MMM dd, yyyy').format(entry.date),
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddWeightDialog(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final weightCtrl = TextEditingController();
+    DateTime date = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Weight Record'),
+              content: Theme(
+                data: AppTheme.getFormTheme(context),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: weightCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Weight (kg)',
+                          prefixIcon: Icon(Icons.monitor_weight),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Please enter weight';
+                          if (double.tryParse(value) == null) return 'Enter a valid number';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: date,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => date = picked);
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date',
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          child: Text(DateFormat('yyyy-MM-dd').format(date)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final weight = double.parse(weightCtrl.text);
+                      final entry = WeightEntry(date: date, weight: weight);
+                      final updatedList = [...member.weightHistory, entry];
+                      final updatedMember = member.copyWith(weightHistory: updatedList);
+
+                      try {
+                        await ref.read(gymOwnerRepositoryProvider).updateMember(updatedMember);
+                        if (dialogCtx.mounted) {
+                          Navigator.pop(dialogCtx);
+                        }
+                      } catch (e) {
+                        if (dialogCtx.mounted) {
+                          ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                            SnackBar(content: Text('Error saving: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddInjuryDialog(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final descCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    DateTime date = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Injury Record'),
+              content: Theme(
+                data: AppTheme.getFormTheme(context),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: descCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Injury Description',
+                          prefixIcon: Icon(Icons.personal_injury),
+                          hintText: 'e.g. Knee Sprain',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Please enter description';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: notesCtrl,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes / Recovery Status',
+                          prefixIcon: Icon(Icons.notes),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: date,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => date = picked);
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date of Injury',
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          child: Text(DateFormat('yyyy-MM-dd').format(date)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final entry = InjuryEntry(
+                        date: date,
+                        description: descCtrl.text.trim(),
+                        notes: notesCtrl.text.trim(),
+                      );
+                      final updatedList = [...member.injuryHistory, entry];
+                      final updatedMember = member.copyWith(injuryHistory: updatedList);
+
+                      try {
+                        await ref.read(gymOwnerRepositoryProvider).updateMember(updatedMember);
+                        if (dialogCtx.mounted) {
+                          Navigator.pop(dialogCtx);
+                        }
+                      } catch (e) {
+                        if (dialogCtx.mounted) {
+                          ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                            SnackBar(content: Text('Error saving: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
